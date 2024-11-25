@@ -47,4 +47,35 @@ export default tseslint.config({
     ...react.configs['jsx-runtime'].rules,
   },
 })
+
+## Analytics Setup
+
+Added Firebase Analytics to track game events and user interactions. All events are properly tagged to distinguish them from other apps in the project.
+
+### Event Structure
+Events are prefixed with game category and app id: `game_booty_tap_[event_name]`
+
+Each event includes:
+- app_id: 'booty_tap'
+- app_category: 'game'
+- app_platform: 'web'
+- timestamp
+- session tracking
+- environment info
+
+### Usage
+```typescript
+import { logCustomEvent } from '../firebase/config';
+
+// Track game events
+logCustomEvent('game_start', { level: 1 });
+logCustomEvent('level_complete', { score: 100 });
 ```
+
+### Firebase Setup
+```typescript
+// Already set up in src/firebase/config.ts
+// Just import and use logCustomEvent
+```
+
+Added: Nov 28, 2023

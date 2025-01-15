@@ -148,10 +148,99 @@ app.post("/api/user/update-referred-by", async (req, res) => {
     res.status(500).json({ error: "An error occurred while processing the referral." });
   }
 });
+const couponPools = new Map();
 
+// Initialize some sample coupon codes for different IDs
+// Hardcoded coupon pools
+couponPools.set(0, [
+  'TWICA047BAF', 'TWI8D17025B', 'TWI04D1B8B0', 'TWI52A94E68', 'TWI8F914032',
+  'TWI063DFFDA', 'TWIDABA8AA8', 'TWIDDD02B32', 'TWID862FAB8', 'TWI08D21F22',
+  'TWI61D6D3A9', 'TWIE2CEA175', 'TWI03BA0E6F', 'TWI0149ECD0', 'TWI0CCDD9D3',
+  'TWIC47BB074', 'TWIA3783697', 'TWI586C66DC', 'TWI0CFCDCD4', 'TWIC06FC709',
+  'TWI1B979AAF', 'TWI93A1A3FA', 'TWI9203CC8B', 'TWI8CB47919', 'TWI634BD1D8',
+  'TWI6064F661', 'TWI8332607D', 'TWID191DFEE', 'TWIEDA000AB', 'TWIE92EEF38',
+  'TWI4EEEEDB1', 'TWIB2CA179B', 'TWICE414248', 'TWI6A8D251A', 'TWIB1926E8F',
+  'TWID6D418AD', 'TWI0B1C29E0', 'TWICA14833B', 'TWI8B3997CB', 'TWI28D83324',
+  'TWI5A65EC0F', 'TWI925E4DD5', 'TWI23ED7CB0', 'TWIDCBF8328', 'TWIB030D80A',
+  'TWI0801A0AC', 'TWI35D24536', 'TWI7B03AA54', 'TWI62CBC306', 'TWI277E864A',
+  'TWIC121F292', 'TWIEBD6B1C8', 'TWIBD57785D', 'TWI9711B851', 'TWI00E00EC4',
+  'TWIBCAB41D2', 'TWID4EE8844', 'TWIE4813838', 'TWI7C7A9BC0', 'TWI44C8810E',
+  'TWIE54CCB5A', 'TWI950CC7C2', 'TWIC7AB43CA', 'TWI52171563', 'TWI2E54ED4A',
+  'TWI13BB45E1', 'TWI95FD8D36', 'TWI9E9219CA', 'TWI45C3E8CC', 'TWI487C5418',
+  'TWI422977B4', 'TWIF3BC25B2', 'TWIE5CD517B', 'TWI775F3E10', 'TWI0CDD9A6D',
+  'TWICE2F45D1', 'TWIFFAC5C32', 'TWI799008C0', 'TWIDACF9763', 'TWI55CB355D',
+  'TWI34A68958', 'TWI41FFF7D7', 'TWIEFC00C88', 'TWI478B8BC2', 'TWI8FAEE9FB',
+  'TWI2C3B4FBF', 'TWI2B61F145', 'TWIECB5C8C8', 'TWI44492613', 'TWI2F9EE42B',
+  'TWIE6F47E65', 'TWIA1121065', 'TWI6ED31967', 'TWI77AEAE66', 'TWI41941E0D',
+  'TWI63B1E862', 'TWIC18023D6', 'TWI8FF6013D', 'TWI2923A77E', 'TWI43D4D1E9',
+  'TWIF8CC7626', 'TWIA17FC8F1', 'TWIDBC8F2ED', 'TWI2569EFFA', 'TWI66DA7F32',
+  'TWIEA58D3BF', 'TWI66B235EF', 'TWI5C84F91A', 'TWICF9A1FEE', 'TWIFE6342A9',
+  'TWIE51D0C52', 'TWI13AD28CA', 'TWIEEE475CC', 'TWI72D5BE68', 'TWI36272504',
+  'TWI4F3A3EF4', 'TWI6127E156', 'TWI867CD2E1', 'TWIFE8CAF65', 'TWI9B4D3E3C',
+  'TWI1CEFF91E', 'TWI7D3BFE7E', 'TWI5FD42009', 'TWIF6DC0473', 'TWI87C7BCE0',
+  'TWI13B0E403', 'TWI92C2AB3E', 'TWI308477CE', 'TWI905D5737', 'TWIDDD81DB5',
+  'TWI000DDC84', 'TWIA779518F', 'TWIAEC9A2AB', 'TWI443904C0', 'TWIE44365B8',
+  'TWI0398FEDF', 'TWI2F689114', 'TWIA56073D3', 'TWI9E42EA27', 'TWI5F9C32B6',
+  'TWI2F5D153F', 'TWIE8B4376E', 'TWIEC9731FF', 'TWID38211DC', 'TWI87B848E2',
+  'TWICA5E9A07', 'TWI32C65109', 'TWI2DD8FA51', 'TWIE1EFC3D1', 'TWI4F3AEE14',
+  'TWI4C9A8FA3', 'TWI67502672', 'TWIC0C8E709', 'TWI1173B6AB', 'TWI1227EBAA',
+  'TWIA5441A3C', 'TWICAD90E1B', 'TWI01BE51D9', 'TWI696A85A0', 'TWIB86F8E0D'
+]);
 
+couponPools.set(1, [
+  'TWI612F99B3', 'TWI33A2E2FE', 'TWI1D4D2318', 'TWIC3B1CF3A', 'TWIF69AEE72',
+  'TWIFD671374', 'TWI64A16525', 'TWID724608D', 'TWI44E0C572', 'TWI44F92C31',
+  'TWID24F42C2', 'TWI5C771A0C', 'TWI1468C277', 'TWI616E6778', 'TWI0EB00023',
+  'TWIB73B3013', 'TWICCB6370B', 'TWI2D58C560', 'TWIA48BCECB', 'TWIB1AC9E90'
+]);
+couponPools.set(4, [
+  'TWIB0039DDD', 'TWI71AA43E1', 'TWI11EC4092', 'TWI9622DB24', 'TWID360284A',
+  'TWI1D88DEB4', 'TWI95F406AB', 'TWIEF65F984', 'TWI38DAE8BC', 'TWIDDC2D17B'
+]);
+// couponPools.set(1, [
+//   'TWI612F99B3', 'TWI33A2E2FE', 'TWI1D4D2318', 'TWIC3B1CF3A', 'TWIF69AEE72',
+//   'TWIFD671374', 'TWI64A16525', 'TWID724608D', 'TWI44E0C572', 'TWI44F92C31',
+//   'TWID24F42C2', 'TWI5C771A0C', 'TWI1468C277', 'TWI616E6778', 'TWI0EB00023',
+//   'TWIB73B3013', 'TWICCB6370B', 'TWI2D58C560', 'TWIA48BCECB', 'TWIB1AC9E90'
+// ]);
 
-  const port = process.env.PORT || 5000;
+// Store current index state
+let currentIndexMap = new Map();
+
+app.get("/api/coupon", async (req, res) => {
+  try {
+    const { id } = req.query; // Changed from req.body since it's a GET request
+    const numId = parseInt(id);
+
+    if (!couponPools.has(numId)) {
+      return res.status(404).json({ message: 'Invalid coupon category ID' });
+    }
+
+    const coupons = couponPools.get(numId);
+    
+    // Initialize index for this category if not exists
+    if (!currentIndexMap.has(numId)) {
+      currentIndexMap.set(numId, 0);
+    }
+
+    let currentIndex = currentIndexMap.get(numId);
+    
+    // Get coupon at current index
+    const couponCode = coupons[currentIndex];
+    
+    // Move to next index, loop back to 0 if at end
+    currentIndex = (currentIndex + 1) % coupons.length;
+    currentIndexMap.set(numId, currentIndex);
+
+    return res.status(200).json({ couponCode });
+
+  } catch (error) {
+    console.error('Error getting coupon code:', error);
+    return res.status(500).json({ message: 'Internal server error' });
+  }
+});
+
+const port = process.env.PORT || 3005;
 app.listen(port, () => {
   console.log(`Server started on port ${port}`);
 });

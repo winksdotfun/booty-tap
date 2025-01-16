@@ -327,6 +327,41 @@ app.get("/api/coupon", ipLimitMiddleware, async (req, res) => {
   }
 });
 
+// New endpoint to check IP claim status
+app.get("/api/check-ip-status", async (req, res) => {
+  try {
+    const clientIP = req.ip;
+    const claimTime = claimedIPs.get(clientIP);
+
+    if (!claimTime) {
+      return res.status(200).json({
+        hasClaimed: false,
+        message: 'IP has not claimed any coupon yet'
+      });
+    }
+
+    if (hasExpired(claimTime)) {
+      claimedIPs.delete(clientIP);
+      return res.status(200).json({
+        hasClaimed: false,
+        message: 'Previous claim has expired'
+      });
+    }
+
+    const remaining = getTimeRemaining(claimTime);
+    return res.status(200).json({
+      hasClaimed: true,
+      message: 'IP has an active claim',
+      timeRemaining: formatTimeRemaining(remaining),
+      nextAvailableTime: new Date(claimTime + TWENTY_FOUR_HOURS).toISOString()
+    });
+
+  } catch (error) {
+    console.error('Error checking IP status:', error);
+    return res.status(500).json({ message: 'Internal server error' });
+  }
+});
+
 const port = process.env.PORT || 3005;
 app.listen(port, () => {
   console.log(`Server started on port ${port}`);

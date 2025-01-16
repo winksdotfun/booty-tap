@@ -3,6 +3,10 @@ const mongoose = require("mongoose");
 const cors = require("cors");
 const User = require("./Models/User");
 
+const rateLimit = require('express-rate-limit');
+
+
+
 require('dotenv').config();
 
 const app = express();
@@ -15,6 +19,72 @@ app.use(express.urlencoded({ limit: '10mb', extended: true }));
 
 
 const dbURI = process.env.MONGODB;
+
+// Store IPs that have already claimed coupons
+const usedIPs = new Map(); // Maps category ID to Set of IPs
+
+// Constants for time calculations
+const TWENTY_FOUR_HOURS = 24 * 60 * 60 * 1000;
+const ONE_HOUR = 60 * 60 * 1000;
+
+// Store IPs with their claim timestamps
+const claimedIPs = new Map();
+
+// Function to check if claim has expired
+const hasExpired = (timestamp) => {
+  return Date.now() - timestamp >= TWENTY_FOUR_HOURS;
+};
+
+// Function to get time remaining in milliseconds
+const getTimeRemaining = (timestamp) => {
+  const remaining = (timestamp + TWENTY_FOUR_HOURS) - Date.now();
+  return remaining > 0 ? remaining : 0;
+};
+
+// Format remaining time into hours and minutes
+const formatTimeRemaining = (ms) => {
+  const hours = Math.floor(ms / (60 * 60 * 1000));
+  const minutes = Math.floor((ms % (60 * 60 * 1000)) / (60 * 1000));
+  return `${hours} hours and ${minutes} minutes`;
+};
+
+// Clean expired entries periodically
+const cleanExpiredEntries = () => {
+  let cleaned = 0;
+  for (const [ip, timestamp] of claimedIPs.entries()) {
+    if (hasExpired(timestamp)) {
+      claimedIPs.delete(ip);
+      cleaned++;
+    }
+  }
+  if (cleaned > 0) {
+    console.log(`Cleaned ${cleaned} expired IP entries`);
+  }
+};
+
+// Run cleanup every hour
+setInterval(cleanExpiredEntries, ONE_HOUR);
+
+// Middleware for IP claiming
+const ipLimitMiddleware = async (req, res, next) => {
+  const clientIP = req.ip;
+  const claimTime = claimedIPs.get(clientIP);
+
+  if (claimTime) {
+    if (!hasExpired(claimTime)) {
+      const remaining = getTimeRemaining(claimTime);
+      return res.status(403).json({
+        message: 'You have already claimed a coupon.',
+        timeRemaining: formatTimeRemaining(remaining),
+        nextAvailableTime: new Date(claimTime + TWENTY_FOUR_HOURS).toISOString()
+      });
+    }
+    // Remove expired claim
+    claimedIPs.delete(clientIP);
+  }
+
+  next();
+};
 mongoose
   .connect(dbURI, {
     useNewUrlParser: true,
@@ -213,10 +283,11 @@ couponPools.set(4, [
 // Store current index state
 let currentIndexMap = new Map();
 
-app.get("/api/coupon", async (req, res) => {
+app.get("/api/coupon", ipLimitMiddleware, async (req, res) => {
   try {
     const { id } = req.query; // Changed from req.body since it's a GET request
     const numId = parseInt(id);
+    const clientIP = req.ip;
 
     if (!couponPools.has(numId)) {
       return res.status(404).json({ message: 'Invalid coupon category ID' });
@@ -238,7 +309,17 @@ app.get("/api/coupon", async (req, res) => {
     currentIndex = (currentIndex + 1) % coupons.length;
     currentIndexMap.set(numId, currentIndex);
 
-    return res.status(200).json({ couponCode });
+    // const categoryIPs = usedIPs.get(numId);
+    // categoryIPs.add(clientIP);
+ // Store IP with current timestamp
+ const claimTime = Date.now();
+ claimedIPs.set(clientIP, claimTime);
+
+ return res.status(200).json({ 
+  couponCode,
+  message: 'Coupon claimed successfully. You can claim again in 24 hours.',
+  nextAvailableTime: new Date(claimTime + TWENTY_FOUR_HOURS).toISOString()
+});
 
   } catch (error) {
     console.error('Error getting coupon code:', error);

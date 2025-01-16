@@ -5,30 +5,23 @@ const User = require("./Models/User");
 
 const rateLimit = require('express-rate-limit');
 
-
-
 require('dotenv').config();
 
 const app = express();
 
 app.use(cors());
- 
 
 app.use(express.json({ limit: '10mb' })); 
 app.use(express.urlencoded({ limit: '10mb', extended: true }));
 
-
 const dbURI = process.env.MONGODB;
 
-// Store IPs that have already claimed coupons
-const usedIPs = new Map(); // Maps category ID to Set of IPs
+// Store IPs that have already claimed coupons with timestamps
+const claimedIPs = new Map(); // Maps IP to {timestamp, categoryId}
 
 // Constants for time calculations
 const TWENTY_FOUR_HOURS = 24 * 60 * 60 * 1000;
 const ONE_HOUR = 60 * 60 * 1000;
-
-// Store IPs with their claim timestamps
-const claimedIPs = new Map();
 
 // Function to check if claim has expired
 const hasExpired = (timestamp) => {
@@ -51,8 +44,8 @@ const formatTimeRemaining = (ms) => {
 // Clean expired entries periodically
 const cleanExpiredEntries = () => {
   let cleaned = 0;
-  for (const [ip, timestamp] of claimedIPs.entries()) {
-    if (hasExpired(timestamp)) {
+  for (const [ip, data] of claimedIPs.entries()) {
+    if (hasExpired(data.timestamp)) {
       claimedIPs.delete(ip);
       cleaned++;
     }
@@ -68,15 +61,18 @@ setInterval(cleanExpiredEntries, ONE_HOUR);
 // Middleware for IP claiming
 const ipLimitMiddleware = async (req, res, next) => {
   const clientIP = req.ip;
-  const claimTime = claimedIPs.get(clientIP);
+  const { id } = req.query;
+  const numId = parseInt(id);
+  
+  const claimData = claimedIPs.get(clientIP);
 
-  if (claimTime) {
-    if (!hasExpired(claimTime)) {
-      const remaining = getTimeRemaining(claimTime);
+  if (claimData) {
+    if (!hasExpired(claimData.timestamp)) {
+      const remaining = getTimeRemaining(claimData.timestamp);
       return res.status(403).json({
         message: 'You have already claimed a coupon.',
         timeRemaining: formatTimeRemaining(remaining),
-        nextAvailableTime: new Date(claimTime + TWENTY_FOUR_HOURS).toISOString()
+        nextAvailableTime: new Date(claimData.timestamp + TWENTY_FOUR_HOURS).toISOString()
       });
     }
     // Remove expired claim
@@ -85,6 +81,7 @@ const ipLimitMiddleware = async (req, res, next) => {
 
   next();
 };
+
 mongoose
   .connect(dbURI, {
     useNewUrlParser: true,
@@ -139,8 +136,6 @@ mongoose
     }
 });
 
-
-
 app.put('/api/user/update', async (req, res) => {
   console.log('Received body:', req.body); // Log the body content
   
@@ -170,7 +165,6 @@ app.put('/api/user/update', async (req, res) => {
       return res.status(500).json({ message: "Server error.", error: error.message });
   }
 });
-
 
 app.post("/api/user/update-referred-by", async (req, res) => {
   const { referralId, address } = req.body;
@@ -218,6 +212,7 @@ app.post("/api/user/update-referred-by", async (req, res) => {
     res.status(500).json({ error: "An error occurred while processing the referral." });
   }
 });
+
 const couponPools = new Map();
 
 // Initialize some sample coupon codes for different IDs
@@ -263,29 +258,25 @@ couponPools.set(1, [
   'TWID24F42C2', 'TWI5C771A0C', 'TWI1468C277', 'TWI616E6778', 'TWI0EB00023',
   'TWIB73B3013', 'TWICCB6370B', 'TWI2D58C560', 'TWIA48BCECB', 'TWIB1AC9E90'
 ]);
+
 couponPools.set(3, [
   'TWIB0039DDD', 'TWI71AA43E1', 'TWI11EC4092', 'TWI9622DB24', 'TWID360284A',
   'TWI1D88DEB4', 'TWI95F406AB', 'TWIEF65F984', 'TWI38DAE8BC', 'TWIDDC2D17B'
 ]);
+
 couponPools.set(4, [
   'TWI9295A12C', 'TWIA751EFFA', 'TWI95C285B5', 'TWIA1BF161B', 'TWIE46B99F7',
   'TWI9520A75F', 'TWIAB247262', 'TWI9042CF36', 'TWI47D22E4E', 'TWIC6F07395',
   'TWIE5326BDA', 'TWI31933CCB', 'TWIB785771B', 'TWI8F5A5D6E', 'TWI365A955D',
   'TWIA883612B', 'TWI426FACA5', 'TWIA2373F5C', 'TWI6323ED4C', 'TWIB100E100'
 ]);
-// couponPools.set(1, [
-//   'TWI612F99B3', 'TWI33A2E2FE', 'TWI1D4D2318', 'TWIC3B1CF3A', 'TWIF69AEE72',
-//   'TWIFD671374', 'TWI64A16525', 'TWID724608D', 'TWI44E0C572', 'TWI44F92C31',
-//   'TWID24F42C2', 'TWI5C771A0C', 'TWI1468C277', 'TWI616E6778', 'TWI0EB00023',
-//   'TWIB73B3013', 'TWICCB6370B', 'TWI2D58C560', 'TWIA48BCECB', 'TWIB1AC9E90'
-// ]);
 
 // Store current index state
 let currentIndexMap = new Map();
 
 app.get("/api/coupon", ipLimitMiddleware, async (req, res) => {
   try {
-    const { id } = req.query; // Changed from req.body since it's a GET request
+    const { id } = req.query;
     const numId = parseInt(id);
     const clientIP = req.ip;
 
@@ -309,17 +300,18 @@ app.get("/api/coupon", ipLimitMiddleware, async (req, res) => {
     currentIndex = (currentIndex + 1) % coupons.length;
     currentIndexMap.set(numId, currentIndex);
 
-    // const categoryIPs = usedIPs.get(numId);
-    // categoryIPs.add(clientIP);
- // Store IP with current timestamp
- const claimTime = Date.now();
- claimedIPs.set(clientIP, claimTime);
+    // Store IP with current timestamp and category
+    const claimTime = Date.now();
+    claimedIPs.set(clientIP, {
+      timestamp: claimTime,
+      categoryId: numId
+    });
 
- return res.status(200).json({ 
-  couponCode,
-  message: 'Coupon claimed successfully. You can claim again in 24 hours.',
-  nextAvailableTime: new Date(claimTime + TWENTY_FOUR_HOURS).toISOString()
-});
+    return res.status(200).json({ 
+      couponCode,
+      message: 'Coupon claimed successfully. You can claim again in 24 hours.',
+      nextAvailableTime: new Date(claimTime + TWENTY_FOUR_HOURS).toISOString()
+    });
 
   } catch (error) {
     console.error('Error getting coupon code:', error);
@@ -331,16 +323,16 @@ app.get("/api/coupon", ipLimitMiddleware, async (req, res) => {
 app.get("/api/check-ip-status", async (req, res) => {
   try {
     const clientIP = req.ip;
-    const claimTime = claimedIPs.get(clientIP);
+    const claimData = claimedIPs.get(clientIP);
 
-    if (!claimTime) {
+    if (!claimData) {
       return res.status(200).json({
         hasClaimed: false,
         message: 'IP has not claimed any coupon yet'
       });
     }
 
-    if (hasExpired(claimTime)) {
+    if (hasExpired(claimData.timestamp)) {
       claimedIPs.delete(clientIP);
       return res.status(200).json({
         hasClaimed: false,
@@ -348,12 +340,13 @@ app.get("/api/check-ip-status", async (req, res) => {
       });
     }
 
-    const remaining = getTimeRemaining(claimTime);
+    const remaining = getTimeRemaining(claimData.timestamp);
     return res.status(200).json({
       hasClaimed: true,
       message: 'IP has an active claim',
+      categoryId: claimData.categoryId,
       timeRemaining: formatTimeRemaining(remaining),
-      nextAvailableTime: new Date(claimTime + TWENTY_FOUR_HOURS).toISOString()
+      nextAvailableTime: new Date(claimData.timestamp + TWENTY_FOUR_HOURS).toISOString()
     });
 
   } catch (error) {

@@ -294,7 +294,7 @@ app.get("/api/coupon", ipLimitMiddleware, async (req, res) => {
   try {
     const { id } = req.query;
     const numId = parseInt(id);
-    const clientIP = req.ip;
+    const clientIP = getClientIP(req);  // Changed to use getClientIP
 console.log("clientIP in coupon", clientIP);
 
 

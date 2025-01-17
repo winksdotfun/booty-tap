@@ -60,7 +60,7 @@ setInterval(cleanExpiredEntries, ONE_HOUR);
 
 // Middleware for IP claiming
 const ipLimitMiddleware = async (req, res, next) => {
-  const clientIP = req.ip;
+  const clientIP = getClientIP(req);
   console.log("clientIP", clientIP);
   const { id } = req.query;
   const numId = parseInt(id);
@@ -275,13 +275,27 @@ couponPools.set(4, [
 
 // Store current index state
 let currentIndexMap = new Map();
+const getClientIP = (req) => {
+  const forwardedFor = req.headers['x-forwarded-for'];
+  const realIP = req.headers['x-real-ip'];
+  
+  console.log('IP Debug:', {
+    reqIP: req.ip,
+    forwardedFor,
+    realIP,
+    remoteAddr: req.connection.remoteAddress
+  });
+  
+  // Use the first forwarded IP if available, otherwise fallback to req.ip
+  return forwardedFor ? forwardedFor.split(',')[0].trim() : req.ip;
+};
 
 app.get("/api/coupon", ipLimitMiddleware, async (req, res) => {
   try {
     const { id } = req.query;
     const numId = parseInt(id);
     const clientIP = req.ip;
-console.log("clientIP", clientIP);
+console.log("clientIP in coupon", clientIP);
 
 
     if (!couponPools.has(numId)) {
@@ -327,7 +341,7 @@ console.log("clientIP", clientIP);
 app.get("/api/check-ip-status", async (req, res) => {
   try {
     console.log("check-ip-status");
-    const clientIP = req.ip;
+    const clientIP = getClientIP(req);
     const claimData = claimedIPs.get(clientIP);
 console.log("clientIP", clientIP);
 

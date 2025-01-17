@@ -61,6 +61,7 @@ setInterval(cleanExpiredEntries, ONE_HOUR);
 // Middleware for IP claiming
 const ipLimitMiddleware = async (req, res, next) => {
   const clientIP = req.ip;
+  console.log("clientIP", clientIP);
   const { id } = req.query;
   const numId = parseInt(id);
   
@@ -137,6 +138,7 @@ mongoose
 });
 
 app.put('/api/user/update', async (req, res) => {
+
   console.log('Received body:', req.body); // Log the body content
   
   const { address, score, level, levelbar } = req.body;
@@ -279,6 +281,8 @@ app.get("/api/coupon", ipLimitMiddleware, async (req, res) => {
     const { id } = req.query;
     const numId = parseInt(id);
     const clientIP = req.ip;
+console.log("clientIP", clientIP);
+
 
     if (!couponPools.has(numId)) {
       return res.status(404).json({ message: 'Invalid coupon category ID' });
@@ -322,9 +326,12 @@ app.get("/api/coupon", ipLimitMiddleware, async (req, res) => {
 // New endpoint to check IP claim status
 app.get("/api/check-ip-status", async (req, res) => {
   try {
+    console.log("check-ip-status");
     const clientIP = req.ip;
     const claimData = claimedIPs.get(clientIP);
+console.log("clientIP", clientIP);
 
+    console.log("claimData", claimData);
     if (!claimData) {
       return res.status(200).json({
         hasClaimed: false,

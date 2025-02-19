@@ -6,10 +6,42 @@ const User = require("./Models/User");
 const rateLimit = require('express-rate-limit');
 
 require('dotenv').config();
+const twitterRoutes = require('./routes/twitterRoutes');
+
 
 const app = express();
 
-app.use(cors());
+app.use(cors({
+  origin: '*', // Allow all origins
+  methods: ['GET', 'POST'],
+  credentials: true
+}));
+
+
+app.use(express.json());
+app.use(express.urlencoded({ extended: true }));
+
+// Debug middleware to log requests
+app.use((req, res, next) => {
+  console.log('Received request:', {
+    method: req.method,
+    path: req.path,
+    body: req.body,
+    headers: req.headers
+  });
+  next();
+});
+
+app.use('/api', twitterRoutes);
+
+// Error handling middleware
+app.use((err, req, res, next) => {
+  console.error('Server error:', err);
+  res.status(500).json({
+    error: 'Internal server error',
+    details: err.message
+  });
+});
 
 app.use(express.json({ limit: '10mb' })); 
 app.use(express.urlencoded({ limit: '10mb', extended: true }));

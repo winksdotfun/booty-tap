@@ -1,4 +1,4 @@
-const { initializeTwitterClient } = require('../Config/twitter');
+const { initializeTwitterClient } = require('../config/twitter');
 
 const generateQuirkyMessage = (username) => {
   const messages = [

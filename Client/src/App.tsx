@@ -16,14 +16,12 @@ import animationimgbutt from "../src/assets/animatedimg.png";
 import audio from "../src/assets/Yes_audio.mp3";
 import setting from "../src/assets/settings2.png";
 
-
 interface TweetResult {
   success: boolean;
   message: string;
   tweetUrl: string;
   tweetText: string;
 }
-
 
 function App() {
   const imageRef = useRef<HTMLImageElement | null>(null);
@@ -67,8 +65,8 @@ function App() {
   const [username, setUsername] = useState("");
   const [isLoading, setIsLoading] = useState(false);
   const [tweetResult, setTweetResult] = useState<TweetResult | null>(null);
-  const [error, setError] = useState('');
-
+  const [error, setError] = useState("");
+  const [isPageLoading, setIsPageLoading] = useState(true);
   //const levelRequirements = [100,200,300,400,500,600,700,800,900,1000,1100,1200,1300,1400,1500,1600,1700,1800,1900,2000];
 
   const generateLevelRequirements = (max: number, step: number) => {
@@ -459,127 +457,143 @@ function App() {
 
   const handleUsernameSubmit = async () => {
     if (!username.trim()) {
-      setError('Please enter a username');
+      setError("Please enter a username");
       return;
     }
 
     setIsLoading(true);
-    setError('');
+    setError("");
 
     const payload = { username: username.trim() };
-    console.log('Sending payload:', payload); // Debug log
+    console.log("Sending payload:", payload); // Debug log
 
     try {
       const response = await fetch(`${dev}/api/tweet`, {
-        method: 'POST',
+        method: "POST",
         headers: {
-          'Content-Type': 'application/json',
+          "Content-Type": "application/json",
         },
-        body: JSON.stringify(payload)
+        body: JSON.stringify(payload),
       });
-      
+
       const data = await response.json();
-      console.log('Received response:', data); // Debug log
-      
+      console.log("Received response:", data); // Debug log
+
       if (data.success) {
         setTweetResult(data as TweetResult);
       } else {
-        setError(data.error || 'Failed to post tweet');
+        setError(data.error || "Failed to post tweet");
       }
     } catch (error) {
-      console.error('Error:', error); // Debug log
-      setError('Something went wrong. Please try again.');
+      console.error("Error:", error); // Debug log
+      setError("Something went wrong. Please try again.");
     } finally {
       setIsLoading(false);
     }
-};
+  };
 
   const handleClose = () => {
     setShowScoreModal(false);
-    setUsername('');
+    setUsername("");
     setTweetResult(null);
-    setError('');
+    setError("");
   };
 
+  useEffect(() => {
+    setTimeout(() => {
+      setIsPageLoading(false);
+    }, 2000);
+  }, []);
 
   return (
-    <div className="relative flex items-center justify-center h-screen bg-black ">
-      <div className="relative w-[1000px] h-[1000px] flex items-center justify-center">
-        {loading && (
-          <div className="absolute inset-0 flex flex-col items-center justify-center bg-black bg-opacity-75 z-50">
-            <img
-              src={ButtonPage}
-              loading="lazy"
-              alt="Loading"
-              style={{ width: "514px", height: "515px" }}
-              className="absolute"
-            />
+    <>
+      {isPageLoading ? (
+        <div className="min-h-screen bg-black flex items-center justify-center">
+          <div className="flex flex-col items-center gap-4">
+            <div className="w-16 h-16 border-4 border-purple-500 border-t-transparent rounded-full animate-spin"></div>
+            <p className="text-white font-medium animate-pulse">
+              Loading...
+            </p>
+          </div>
+        </div>
+      ) : (
+        <div className="relative flex items-center justify-center h-screen bg-black ">
+          <div className="relative w-[1000px] h-[1000px] flex items-center justify-center">
+            {loading && (
+              <div className="absolute inset-0 flex flex-col items-center justify-center bg-black bg-opacity-75 z-50">
+                <img
+                  src={ButtonPage}
+                  loading="lazy"
+                  alt="Loading"
+                  style={{ width: "514px", height: "515px" }}
+                  className="absolute"
+                />
 
-            <div
-              className=" text-md font-bold text-red-500 z-30 mt-52 w-60 text-center duration-[1000ms]"
-              style={{
-                textShadow:
-                  "1px 1px 0 #fff, -1px -1px 0 #fff, 1px -1px 0 #fff, -1px 1px 0 #fff",
-              }}
-            >
-              {loadingmessage}
-            </div>
-            <div className="relative w-4/5  mt-4 ">
-              {/* Loading Bar */}
-              <div className="flex justify-center">
-                <div className="h-3 w-4/5  bg-white rounded-md ring-4 ring-white overflow-hidden">
+                <div
+                  className=" text-md font-bold text-red-500 z-30 mt-52 w-60 text-center duration-[1000ms]"
+                  style={{
+                    textShadow:
+                      "1px 1px 0 #fff, -1px -1px 0 #fff, 1px -1px 0 #fff, -1px 1px 0 #fff",
+                  }}
+                >
+                  {loadingmessage}
+                </div>
+                <div className="relative w-4/5  mt-4 ">
+                  {/* Loading Bar */}
+                  <div className="flex justify-center">
+                    <div className="h-3 w-4/5  bg-white rounded-md ring-4 ring-white overflow-hidden">
+                      <div
+                        className="h-full bg-gradient-to-r from-yellow-400 to-red-500 transition-all duration-[1000ms] ease-in-out"
+                        style={{ width: `${progress}%` }}
+                      ></div>
+                    </div>
+                  </div>
+
+                  {/* Loading Text */}
                   <div
-                    className="h-full bg-gradient-to-r from-yellow-400 to-red-500 transition-all duration-[1000ms] ease-in-out"
-                    style={{ width: `${progress}%` }}
-                  ></div>
+                    className="mt-1 text-red-500 text-lg font-bold text-center"
+                    style={{
+                      textShadow:
+                        "1px 1px 0 #fff, -1px -1px 0 #fff, 1px -1px 0 #fff, -1px 1px 0 #fff",
+                    }}
+                  >
+                    LOADING...
+                  </div>
                 </div>
               </div>
+            )}
 
-              {/* Loading Text */}
-              <div
-                className="mt-1 text-red-500 text-lg font-bold text-center"
-                style={{
-                  textShadow:
-                    "1px 1px 0 #fff, -1px -1px 0 #fff, 1px -1px 0 #fff, -1px 1px 0 #fff",
-                }}
-              >
-                LOADING...
-              </div>
-            </div>
-          </div>
-        )}
+            <img
+              ref={imageRef}
+              src={isFirstImage ? ButtonPage : ZoomGirl}
+              loading="lazy"
+              alt="MainImage"
+              onClick={isFirstImage ? handleImageClick : handleImageClick}
+              className={`${
+                isFirstImage ? "object-cover w-full h-full" : "object-contain"
+              }`}
+              style={
+                isFirstImage
+                  ? { width: "514px", height: "515px" }
+                  : { width: "515px", height: "515px" }
+              }
+            />
 
-        <img
-          ref={imageRef}
-          src={isFirstImage ? ButtonPage : ZoomGirl}
-          loading="lazy"
-          alt="MainImage"
-          onClick={isFirstImage ? handleImageClick : handleImageClick}
-          className={`${
-            isFirstImage ? "object-cover w-full h-full" : "object-contain"
-          }`}
-          style={
-            isFirstImage
-              ? { width: "514px", height: "515px" }
-              : { width: "515px", height: "515px" }
-          }
-        />
-
-        {isVisible && (
-          <img
-            src={playbtn}
-            loading="lazy"
-            alt="playbtn"
-            onClick={handleClick}
-            className="absolute w-16 h-24 object-cover z-20 cursor-pointer  transition-opacity duration-700 ease-out "
-            style={{ right: "190px", bottom: "119px" }}
-          />
-        )}
-        {isFirstImage && (
-          <div className="absolute">
-            {/* <ConnectButton /> */}
-            <CustomButton />
-            {/* {!isWalletConnected ? (
+            {isVisible && (
+              <img
+                src={playbtn}
+                loading="lazy"
+                alt="playbtn"
+                onClick={handleClick}
+                className="absolute w-16 h-24 object-cover z-20 cursor-pointer  transition-opacity duration-700 ease-out "
+                style={{ right: "190px", bottom: "119px" }}
+              />
+            )}
+            {isFirstImage && (
+              <div className="absolute">
+                {/* <ConnectButton /> */}
+                <CustomButton />
+                {/* {!isWalletConnected ? (
                 <button onClick={connectWallet} type="button" className="">
                   <img src={walletlogo} alt="playbtn"
                     className="absolute w-12 h-20 object-cover z-36 cursor-pointer  transition-opacity duration-700 ease-out  left-48"
@@ -595,319 +609,319 @@ function App() {
               </button>
           </div>
       )} */}
-          </div>
-        )}
-        {showSpankImage && lastActionCoordinates && (
-          <img
-            src={ActionImage}
-            loading="lazy"
-            alt="Action"
-            className="absolute action-image z-30"
-            style={{
-              left: "235px",
-              top: "300px",
-              width: "140px",
-              height: "140px",
-            }}
-          />
-        )}
+              </div>
+            )}
+            {showSpankImage && lastActionCoordinates && (
+              <img
+                src={ActionImage}
+                loading="lazy"
+                alt="Action"
+                className="absolute action-image z-30"
+                style={{
+                  left: "235px",
+                  top: "300px",
+                  width: "140px",
+                  height: "140px",
+                }}
+              />
+            )}
 
-        {showPlusoneImage && newImagePosition && (
-          <img
-            src={PlusoneImage}
-            loading="lazy"
-            alt="New Action"
-            className={`new-action-image z-30 ${
-              showPlusoneImage ? "show" : "hide"
-            }`}
-            style={{
-              position: "absolute",
-              left: "143px",
-              top: "40px",
-              width: "30px",
-              height: "80px",
-            }}
-          />
-        )}
+            {showPlusoneImage && newImagePosition && (
+              <img
+                src={PlusoneImage}
+                loading="lazy"
+                alt="New Action"
+                className={`new-action-image z-30 ${
+                  showPlusoneImage ? "show" : "hide"
+                }`}
+                style={{
+                  position: "absolute",
+                  left: "143px",
+                  top: "40px",
+                  width: "30px",
+                  height: "80px",
+                }}
+              />
+            )}
 
-        {Showanimationbutt && (
-          <img
-            src={animationimgbutt}
-            loading="lazy"
-            alt="Level Up"
-            className="absolute w-fit  "
-            style={{
-              left: "123px",
-              width: "290px",
-              height: "490px",
-              bottom: "24px",
-            }}
-          />
-        )}
+            {Showanimationbutt && (
+              <img
+                src={animationimgbutt}
+                loading="lazy"
+                alt="Level Up"
+                className="absolute w-fit  "
+                style={{
+                  left: "123px",
+                  width: "290px",
+                  height: "490px",
+                  bottom: "24px",
+                }}
+              />
+            )}
 
-        {showRedImage && (
-          <img
-            src={RedImage}
-            loading="lazy"
-            alt="red "
-            className="absolute "
-            style={{
-              left: "235px",
-              top: "300px",
-              width: "140px",
-              height: "140px",
-            }}
-          />
-        )}
-        {showRedhandImage && (
-          <img
-            src={RedhandImage}
-            loading="lazy"
-            alt="Level Up"
-            className="absolute w-fit fade-in-levelup level-up-animation slowFadeInOut "
-            style={{
-              left: "235px",
-              top: "300px",
-              width: "140px",
-              height: "140px",
-            }}
-          />
-        )}
-        {!isFirstImage && (
-          <div
-            className={`absolute z-20 fade-in ${
-              score > 10000 ? "text-xl mt-1" : "text-3xl"
-            }`}
-            style={{
-              top: "26px",
-              right: "35px",
-              background:
-                "linear-gradient(to bottom, rgba(255, 75, 108, 100), rgba(255, 151, 114, 100))",
-              WebkitBackgroundClip: "text",
-              color: "transparent",
-              transition: "color 0.5s ease-in-out",
-            }}
-          >
-            {score}
-          </div>
-        )}
-        {showScoreModal && (
-           <div className="fixed inset-0 bg-black bg-opacity-75 flex items-center justify-center z-50">
-           <div className="bg-gradient-to-b from-pink-500 to-red-500 p-6 rounded-lg shadow-xl w-80 border-2 border-white">
-             {!tweetResult ? (
-               <>
-                 <h2
-                   className="text-2xl font-bold mb-4 text-center"
-                   style={{
-                     textShadow:
-                       "1px 1px 0 #fff, -1px -1px 0 #fff, 1px -1px 0 #fff, -1px 1px 0 #fff",
-                   }}
-                 >
-                   Haa! You've spanked me hard!🥵
-                 </h2>
-   
-                 <p className="text-white text-center mb-4 font-semibold">
-                   Enter your Twitter handle for a shoutout!🫣
-                 </p>
-   
-                 <input
-                   type="text"
-                   placeholder="X username"
-                   value={username}
-                   onChange={(e) => setUsername(e.target.value)}
-                   disabled={isLoading}
-                   className="w-full px-4 py-2 rounded-md mb-4 bg-white/90 text-red-500 font-bold 
+            {showRedImage && (
+              <img
+                src={RedImage}
+                loading="lazy"
+                alt="red "
+                className="absolute "
+                style={{
+                  left: "235px",
+                  top: "300px",
+                  width: "140px",
+                  height: "140px",
+                }}
+              />
+            )}
+            {showRedhandImage && (
+              <img
+                src={RedhandImage}
+                loading="lazy"
+                alt="Level Up"
+                className="absolute w-fit fade-in-levelup level-up-animation slowFadeInOut "
+                style={{
+                  left: "235px",
+                  top: "300px",
+                  width: "140px",
+                  height: "140px",
+                }}
+              />
+            )}
+            {!isFirstImage && (
+              <div
+                className={`absolute z-20 fade-in ${
+                  score > 10000 ? "text-xl mt-1" : "text-3xl"
+                }`}
+                style={{
+                  top: "26px",
+                  right: "35px",
+                  background:
+                    "linear-gradient(to bottom, rgba(255, 75, 108, 100), rgba(255, 151, 114, 100))",
+                  WebkitBackgroundClip: "text",
+                  color: "transparent",
+                  transition: "color 0.5s ease-in-out",
+                }}
+              >
+                {score}
+              </div>
+            )}
+            {showScoreModal && (
+              <div className="fixed inset-0 bg-black bg-opacity-75 flex items-center justify-center z-50">
+                <div className="bg-gradient-to-b from-pink-500 to-red-500 p-6 rounded-lg shadow-xl w-80 border-2 border-white">
+                  {!tweetResult ? (
+                    <>
+                      <h2
+                        className="text-2xl font-bold mb-4 text-center"
+                        style={{
+                          textShadow:
+                            "1px 1px 0 #fff, -1px -1px 0 #fff, 1px -1px 0 #fff, -1px 1px 0 #fff",
+                        }}
+                      >
+                        Haa! You've spanked me hard!🥵
+                      </h2>
+
+                      <p className="text-white text-center mb-4 font-semibold">
+                        Enter your Twitter handle for a shoutout!🫣
+                      </p>
+
+                      <input
+                        type="text"
+                        placeholder="X username"
+                        value={username}
+                        onChange={(e) => setUsername(e.target.value)}
+                        disabled={isLoading}
+                        className="w-full px-4 py-2 rounded-md mb-4 bg-white/90 text-red-500 font-bold 
                     placeholder:text-red-300 focus:outline-none focus:ring-2 focus:ring-white"
-                 />
-   
-                 {error && (
-                   <p className="text-white text-center mb-4 bg-red-600 p-2 rounded">
-                     {error}
-                   </p>
-                 )}
-   
-                 <div className="flex gap-3 justify-center">
-                   <button
-                     onClick={handleUsernameSubmit}
-                     disabled={isLoading}
-                     className="bg-white text-red-500
+                      />
+
+                      {error && (
+                        <p className="text-white text-center mb-4 bg-red-600 p-2 rounded">
+                          {error}
+                        </p>
+                      )}
+
+                      <div className="flex gap-3 justify-center">
+                        <button
+                          onClick={handleUsernameSubmit}
+                          disabled={isLoading}
+                          className="bg-white text-red-500
                       py-2 px-6 rounded-md font-bold text-lg border-2 border-red-500 
                       hover:bg-red-50 transition-colors duration-200 disabled:opacity-50
                       disabled:cursor-not-allowed flex items-center gap-2"
-                   >
-                     {isLoading ? (
-                       <>
-                         <div className="w-5 h-5 border-2 border-red-500 border-t-transparent rounded-full animate-spin" />
-                         Posting...
-                       </>
-                     ) : (
-                       'Shoutout!🫦'
-                     )}
-                   </button>
-                 </div>
-               </>
-             ) : (
-               <div className="text-center">
-                 <div className="mb-4">
-                   <div className="w-16 h-16 mx-auto bg-white rounded-full flex items-center justify-center">
-                     <svg 
-                       className="w-10 h-10 text-red-500" 
-                       fill="none" 
-                       stroke="currentColor" 
-                       viewBox="0 0 24 24"
-                     >
-                       <path 
-                         strokeLinecap="round" 
-                         strokeLinejoin="round" 
-                         strokeWidth={2} 
-                         d="M5 13l4 4L19 7" 
-                       />
-                     </svg>
-                   </div>
-                 </div>
-                 
-                 <h3 className="text-white font-bold text-xl mb-4">
-                   Tweet Posted Successfully!
-                 </h3>
-                 
-                 <p className="text-white mb-4">
-                   {tweetResult.tweetText}
-                 </p>
-                 
-                 <div className="flex gap-3 justify-center">
-                   <a
-                     href={tweetResult.tweetUrl}
-                     target="_blank"
-                     rel="noopener noreferrer"
-                     className="bg-white text-red-500 py-2 px-6 rounded-md font-bold 
+                        >
+                          {isLoading ? (
+                            <>
+                              <div className="w-5 h-5 border-2 border-red-500 border-t-transparent rounded-full animate-spin" />
+                              Posting...
+                            </>
+                          ) : (
+                            "Shoutout!🫦"
+                          )}
+                        </button>
+                      </div>
+                    </>
+                  ) : (
+                    <div className="text-center">
+                      <div className="mb-4">
+                        <div className="w-16 h-16 mx-auto bg-white rounded-full flex items-center justify-center">
+                          <svg
+                            className="w-10 h-10 text-red-500"
+                            fill="none"
+                            stroke="currentColor"
+                            viewBox="0 0 24 24"
+                          >
+                            <path
+                              strokeLinecap="round"
+                              strokeLinejoin="round"
+                              strokeWidth={2}
+                              d="M5 13l4 4L19 7"
+                            />
+                          </svg>
+                        </div>
+                      </div>
+
+                      <h3 className="text-white font-bold text-xl mb-4">
+                        Tweet Posted Successfully!
+                      </h3>
+
+                      <p className="text-white mb-4">{tweetResult.tweetText}</p>
+
+                      <div className="flex gap-3 justify-center">
+                        <a
+                          href={tweetResult.tweetUrl}
+                          target="_blank"
+                          rel="noopener noreferrer"
+                          className="bg-white text-red-500 py-2 px-6 rounded-md font-bold 
                        text-lg border-2 border-red-500 hover:bg-red-50 transition-colors duration-200"
-                   >
-                     View Tweet
-                   </a>
-                   <button
-                     onClick={handleClose}
-                     className="bg-red-600 text-white py-2 px-6 rounded-md font-bold 
+                        >
+                          View Tweet
+                        </a>
+                        <button
+                          onClick={handleClose}
+                          className="bg-red-600 text-white py-2 px-6 rounded-md font-bold 
                        text-lg border-2 border-white hover:bg-red-700 transition-colors duration-200"
-                   >
-                     Close
-                   </button>
-                 </div>
-               </div>
-             )}
-           </div>
-         </div>
-        )}
-
-        {!isFirstImage && (
-          <div
-            className="absolute text-2xl z-20 font-bold fade-in"
-            style={{
-              top: "36px",
-              left: "73px",
-              background:
-                "linear-gradient(to bottom,  rgba(255, 75, 108, 100), rgba(255, 151, 114, 10))",
-              WebkitBackgroundClip: "text",
-              color: "transparent",
-              transition: "color 0.5s ease-in-out",
-            }}
-          >
-            {level}
-          </div>
-        )}
-        {!isFirstImage && (
-          <div className="z-20 absolute top-4 left-6">
-            <div className="progress-meter-container ">
-              <div
-                className="progress-bar"
-                style={{ width: `${clickProgress}%` }}
-              ></div>
-              <p className="invisible-dots">
-                ...................................
-              </p>{" "}
-              {/* Invisible dots */}
-            </div>
-          </div>
-        )}
-
-        {showMessage && (
-          <div className="absolute top-10 left-1/2 transform -translate-x-1/2 bg-white text-black p-1 rounded shadow-md z-20">
-            {message}
-          </div>
-        )}
-        {showRef && (
-          <button
-            onClick={handleShare}
-            className="absolute z-30 bottom-4 left-5"
-          >
-            <img
-              src={Refbtn}
-              loading="lazy"
-              alt="Ref btn"
-              className="blinking"
-              style={{ width: "65px", height: "65px" }}
-            />
-          </button>
-        )}
-
-        {showRef && (
-          <button
-            onClick={handleShare}
-            className="absolute z-30 bottom-4 left-5"
-          >
-            <img
-              src={Refbtn}
-              loading="lazy"
-              alt="Ref btn"
-              className="blinking"
-              style={{ width: "65px", height: "65px" }}
-            />
-          </button>
-        )}
-
-        {isWalletConnected && isReferred && (
-          <button className=" absolute  z-30 bottom-7 right-6">
-            <img
-              src={setting}
-              loading="lazy"
-              alt="Ref btn"
-              onClick={handleOpenPopup}
-              style={{ width: "40px", height: "40px" }}
-            />
-          </button>
-        )}
-
-        {showPopup && (
-          <div className="fixed inset-0 bg-gray-900 bg-opacity-70 flex items-center justify-center z-50">
-            <div className="bg-sky-400 p-6 rounded-lg shadow-xl w-80 z-50 border border-gray-300">
-              <h2 className="text-lg font-bold mb-4 text-white">
-                Enter Referral ID
-              </h2>
-              <input
-                type="text"
-                value={referralId}
-                onChange={(e) => setReferralId(e.target.value)}
-                placeholder="Your Referral ID"
-                className="border border-gray-300 rounded w-full px-3 py-2 mb-4 focus:outline-none focus:ring focus:ring-blue-300 text-gray-900 placeholder-gray-500"
-              />
-              <div className="flex justify-end gap-2">
-                <button
-                  onClick={handleClosePopup}
-                  className="bg-gray-400 text-gray-900 px-4 py-2 rounded hover:bg-gray-500 focus:outline-none focus:ring focus:ring-blue-300"
-                >
-                  Cancel
-                </button>
-                <button
-                  onClick={handleRefSubmit}
-                  className="bg-red-500 text-white px-4 py-2 rounded hover:bg-red-700 focus:outline-none focus:ring focus:ring-blue-400"
-                >
-                  Submit
-                </button>
+                        >
+                          Close
+                        </button>
+                      </div>
+                    </div>
+                  )}
+                </div>
               </div>
-            </div>
+            )}
+
+            {!isFirstImage && (
+              <div
+                className="absolute text-2xl z-20 font-bold fade-in"
+                style={{
+                  top: "36px",
+                  left: "73px",
+                  background:
+                    "linear-gradient(to bottom,  rgba(255, 75, 108, 100), rgba(255, 151, 114, 10))",
+                  WebkitBackgroundClip: "text",
+                  color: "transparent",
+                  transition: "color 0.5s ease-in-out",
+                }}
+              >
+                {level}
+              </div>
+            )}
+            {!isFirstImage && (
+              <div className="z-20 absolute top-4 left-6">
+                <div className="progress-meter-container ">
+                  <div
+                    className="progress-bar"
+                    style={{ width: `${clickProgress}%` }}
+                  ></div>
+                  <p className="invisible-dots">
+                    ...................................
+                  </p>{" "}
+                  {/* Invisible dots */}
+                </div>
+              </div>
+            )}
+
+            {showMessage && (
+              <div className="absolute top-10 left-1/2 transform -translate-x-1/2 bg-white text-black p-1 rounded shadow-md z-20">
+                {message}
+              </div>
+            )}
+            {showRef && (
+              <button
+                onClick={handleShare}
+                className="absolute z-30 bottom-4 left-5"
+              >
+                <img
+                  src={Refbtn}
+                  loading="lazy"
+                  alt="Ref btn"
+                  className="blinking"
+                  style={{ width: "65px", height: "65px" }}
+                />
+              </button>
+            )}
+
+            {showRef && (
+              <button
+                onClick={handleShare}
+                className="absolute z-30 bottom-4 left-5"
+              >
+                <img
+                  src={Refbtn}
+                  loading="lazy"
+                  alt="Ref btn"
+                  className="blinking"
+                  style={{ width: "65px", height: "65px" }}
+                />
+              </button>
+            )}
+
+            {isWalletConnected && isReferred && (
+              <button className=" absolute  z-30 bottom-7 right-6">
+                <img
+                  src={setting}
+                  loading="lazy"
+                  alt="Ref btn"
+                  onClick={handleOpenPopup}
+                  style={{ width: "40px", height: "40px" }}
+                />
+              </button>
+            )}
+
+            {showPopup && (
+              <div className="fixed inset-0 bg-gray-900 bg-opacity-70 flex items-center justify-center z-50">
+                <div className="bg-sky-400 p-6 rounded-lg shadow-xl w-80 z-50 border border-gray-300">
+                  <h2 className="text-lg font-bold mb-4 text-white">
+                    Enter Referral ID
+                  </h2>
+                  <input
+                    type="text"
+                    value={referralId}
+                    onChange={(e) => setReferralId(e.target.value)}
+                    placeholder="Your Referral ID"
+                    className="border border-gray-300 rounded w-full px-3 py-2 mb-4 focus:outline-none focus:ring focus:ring-blue-300 text-gray-900 placeholder-gray-500"
+                  />
+                  <div className="flex justify-end gap-2">
+                    <button
+                      onClick={handleClosePopup}
+                      className="bg-gray-400 text-gray-900 px-4 py-2 rounded hover:bg-gray-500 focus:outline-none focus:ring focus:ring-blue-300"
+                    >
+                      Cancel
+                    </button>
+                    <button
+                      onClick={handleRefSubmit}
+                      className="bg-red-500 text-white px-4 py-2 rounded hover:bg-red-700 focus:outline-none focus:ring focus:ring-blue-400"
+                    >
+                      Submit
+                    </button>
+                  </div>
+                </div>
+              </div>
+            )}
           </div>
-        )}
-      </div>
-    </div>
+        </div>
+      )}
+    </>
   );
 }
 

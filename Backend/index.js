@@ -13,8 +13,6 @@ const app = express();
 
 app.use(cors({
   origin: '*', // Allow all origins
-  methods: ['GET', 'POST'],
-  credentials: true
 }));
 
 

@@ -1,14 +1,15 @@
 const { initializeTwitterClient } = require('../config/twitter');
+const User = require('mongoose').model('User');
 
 const generateQuirkyMessage = (username) => {
   const messages = [
-    `Hey @${username}! 👋 Just wanted to let you know you're absolutely crushing it! 🚀`,
-    `Spotted in the wild: @${username} being awesome as usual! ✨`,
-    `Breaking news: @${username} just made our day a whole lot better! 🌟`,
-    `Dear @${username}, thanks for being uniquely you! 🎉`,
-    `BREAKING: @${username} just made our day hotter than a summer day in Vegas! 🔥😈`,
-    `Yo @${username}, you’re so amazing, it's borderline unfair. Keep making us all jealous. 😜💯`
-  ];
+    `Hey @${username}! 👋 Just wanted to let you know you're absolutely crushing it! 🚀\nhttps://bootytap.winks.fun/`,
+    `Spotted in the wild: @${username} being awesome as usual! ✨\nhttps://bootytap.winks.fun/`,
+    `Breaking news: @${username} just made our day a whole lot better! 🌟\nhttps://bootytap.winks.fun/`,
+    `Dear @${username}, thanks for being uniquely you! 🎉\nhttps://bootytap.winks.fun/`,
+    `BREAKING: @${username} just made our day hotter than a summer day in Vegas! 🔥😈\nhttps://bootytap.winks.fun/`,
+    `Yo @${username}, you're so amazing, it's borderline unfair. Keep making us all jealous. 😜💯\nhttps://bootytap.winks.fun/`
+];
   return messages[Math.floor(Math.random() * messages.length)];
 };
 
@@ -18,11 +19,29 @@ const postTweet = async (req, res) => {
   console.log('Received request body:', req.body);
 
   try {
-    const { username } = req.body;
+    const { username, address } = req.body;
 
     if (!username) {
       console.log('No username provided in request');
       return res.status(400).json({ error: 'Username is required' });
+    }
+
+    if (!address) {
+      return res.status(400).json({ error: 'Wallet address is required' });
+    }
+
+    // Check points before posting tweet
+    const user = await User.findOne({ address });
+    if (!user) {
+      return res.status(404).json({ error: 'User not found' });
+    }
+
+    if (user.score < 69) {
+      return res.status(400).json({ 
+        error: 'Insufficient points',
+        currentScore: user.score,
+        required: 69
+      });
     }
 
     console.log('Processing username:', username);
@@ -44,6 +63,10 @@ const postTweet = async (req, res) => {
       const tweetResult = await twitterClient.sendTweet(message);
       console.log('Tweet result:', tweetResult);
 
+      // If tweet is successful, deduct points
+      user.score -= 69;
+      await user.save();
+
       // Instead of fetching tweet details again, construct URL from the initial response
       // Most Twitter API responses include either an id or id_str field
       const tweetId = tweetResult.id || tweetResult.id_str;
@@ -51,12 +74,12 @@ const postTweet = async (req, res) => {
       
       if (!tweetId) {
         console.log('Tweet posted but no ID received:', tweetResult);
-        // Still return success since tweet was posted
         return res.status(200).json({
           success: true,
           message: 'Tweet posted successfully',
           tweetUrl: `https://twitter.com/${process.env.TWITTER_USERNAME}/`, // Fallback URL
-          tweetText: message
+          tweetText: message,
+          updatedScore: user.score
         });
       }
 
@@ -67,7 +90,8 @@ const postTweet = async (req, res) => {
         success: true,
         message: 'Tweet posted successfully',
         tweetUrl,
-        tweetText: message
+        tweetText: message,
+        updatedScore: user.score
       });
 
     } catch (tweetError) {
@@ -89,7 +113,49 @@ const postTweet = async (req, res) => {
   }
 };
 
+const deductPoints = async (req, res) => {
+  try {
+    const { address } = req.body;
+
+    if (!address) {
+      return res.status(400).json({ error: 'Wallet address is required' });
+    }
+
+    // Find the user
+    const user = await User.findOne({ address });
+    if (!user) {
+      return res.status(404).json({ error: 'User not found' });
+    }
+
+    // Check if user has enough points
+    if (user.score < 69) {
+      return res.status(400).json({ 
+        error: 'Insufficient points',
+        currentScore: user.score,
+        required: 69
+      });
+    }
+
+    // Deduct points
+    user.score -= 69;
+    await user.save();
+
+    return res.status(200).json({
+      success: true,
+      message: 'Points deducted successfully',
+      updatedScore: user.score
+    });
+
+  } catch (error) {
+    console.error('Error in deductPoints:', error);
+    return res.status(500).json({
+      error: 'Failed to deduct points',
+      details: error.message
+    });
+  }
+};
 
 module.exports = {
-  postTweet
+  postTweet,
+  deductPoints
 };

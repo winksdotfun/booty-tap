@@ -447,7 +447,7 @@ function App() {
   // };
 
   // Define array of score milestones
-  const scoreMillestones = [12, 69, 100, 120];
+  const scoreMillestones = [69, 169, 269, 369, 469, 569, 669, 769, 869, 969];
 
   useEffect(() => {
     if (scoreMillestones.includes(score)) {
@@ -461,11 +461,19 @@ function App() {
       return;
     }
 
+    if (!address) {
+      setError("Please connect your wallet first");
+      return;
+    }
+
     setIsLoading(true);
     setError("");
 
-    const payload = { username: username.trim() };
-    console.log("Sending payload:", payload); // Debug log
+    const payload = {
+      username: username.trim(),
+      address: address, // Include the wallet address
+    };
+    console.log("Sending payload:", payload);
 
     try {
       const response = await fetch(`${dev}/api/tweet`, {
@@ -477,15 +485,20 @@ function App() {
       });
 
       const data = await response.json();
-      console.log("Received response:", data); // Debug log
+      console.log("Received response:", data);
 
       if (data.success) {
         setTweetResult(data as TweetResult);
+        // Update the user's score in your UI state if needed
+        if (data.updatedScore !== undefined) {
+          // Update your score state here
+          setScore(data.updatedScore); // Assuming you have a setScore function
+        }
       } else {
         setError(data.error || "Failed to post tweet");
       }
     } catch (error) {
-      console.error("Error:", error); // Debug log
+      console.error("Error:", error);
       setError("Something went wrong. Please try again.");
     } finally {
       setIsLoading(false);
@@ -511,9 +524,7 @@ function App() {
         <div className="min-h-screen bg-black flex items-center justify-center">
           <div className="flex flex-col items-center gap-4">
             <div className="w-16 h-16 border-4 border-purple-500 border-t-transparent rounded-full animate-spin"></div>
-            <p className="text-white font-medium animate-pulse">
-              Loading...
-            </p>
+            <p className="text-white font-medium animate-pulse">Loading...</p>
           </div>
         </div>
       ) : (
@@ -707,11 +718,22 @@ function App() {
             )}
             {showScoreModal && (
               <div className="fixed inset-0 bg-black bg-opacity-75 flex items-center justify-center z-50">
-                <div className="bg-gradient-to-b from-pink-500 to-red-500 p-6 rounded-lg shadow-xl w-80 border-2 border-white">
+                <div className="relative bg-gradient-to-b from-pink-500 to-red-500 p-6 rounded-lg shadow-xl w-80 border-2 border-white">
                   {!tweetResult ? (
                     <>
+                      <button
+                        onClick={handleClose}
+                        className="absolute top-2 right-2 font-bold border-2 border-white p-1 px-2 rounded-full"
+                        style={{
+                          textShadow:
+                            "1px 1px 0 #fff, -1px -1px 0 #fff, 1px -1px 0 #fff, -1px 1px 0 #fff",
+                        }}
+                      >
+                        X
+                      </button>
+
                       <h2
-                        className="text-2xl font-bold mb-4 text-center"
+                        className="text-2xl font-bold mb-2 text-center"
                         style={{
                           textShadow:
                             "1px 1px 0 #fff, -1px -1px 0 #fff, 1px -1px 0 #fff, -1px 1px 0 #fff",
@@ -720,9 +742,19 @@ function App() {
                         Haa! You've spanked me hard!🥵
                       </h2>
 
-                      <p className="text-white text-center mb-4 font-semibold">
-                        Enter your Twitter handle for a shoutout!🫣
+                      <p
+                        className="text-xl font-bold mb-4 text-center bg-white p-1 px-3 rounded-md"
+                        style={{
+                          textShadow:
+                            "1px 1px 0 #fff, -1px -1px 0 #fff, 1px -1px 0 #fff, -1px 1px 0 #fff",
+                        }}
+                      >
+                        Get a spicy shoutout on X for 69 points! 👀
                       </p>
+
+                      {/* <p className="text-white text-center mb-4 font-semibold">
+                        Drop your Twitter handle below! 
+                      </p> */}
 
                       <input
                         type="text"
@@ -755,7 +787,7 @@ function App() {
                               Posting...
                             </>
                           ) : (
-                            "Shoutout!🫦"
+                            "Get Shoutout! 🫦"
                           )}
                         </button>
                       </div>
@@ -781,7 +813,7 @@ function App() {
                       </div>
 
                       <h3 className="text-white font-bold text-xl mb-4">
-                        Tweet Posted Successfully!
+                        Tweet Posted Successfully! 🎉
                       </h3>
 
                       <p className="text-white mb-4">{tweetResult.tweetText}</p>

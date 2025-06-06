@@ -7,6 +7,7 @@ const rateLimit = require('express-rate-limit');
 
 require('dotenv').config();
 const twitterRoutes = require('./routes/twitterRoutes');
+const swellActionRoutes =  require('./routes/swellRoutes');
 
 
 const app = express();
@@ -31,6 +32,9 @@ app.use((req, res, next) => {
 });
 
 app.use('/api', twitterRoutes);
+
+app.use("/api/action", swellActionRoutes);
+
 
 // Error handling middleware
 app.use((err, req, res, next) => {

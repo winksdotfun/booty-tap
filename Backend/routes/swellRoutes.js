@@ -1,5 +1,5 @@
 import express from "express";
-import { updateSwellPoints, fetchSwellPoints} from "../controller/SwellPoints";
+import { updateSwellPoints, fetchSwellPoints} from "../controller/SwellPoints.js";
 
 const router = express.Router();
 

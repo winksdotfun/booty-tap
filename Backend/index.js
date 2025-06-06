@@ -1,13 +1,14 @@
-const express = require("express");
-const mongoose = require("mongoose");
-const cors = require("cors");
-const User = require("./Models/User");
+import express from "express";
+import mongoose from "mongoose";
+import cors from "cors";
+import User from "./Models/User.js";
 
-const rateLimit = require('express-rate-limit');
+import rateLimit from 'express-rate-limit';
 
-require('dotenv').config();
-const twitterRoutes = require('./routes/twitterRoutes');
-const swellActionRoutes =  require('./routes/swellRoutes');
+import dotenv from 'dotenv';
+dotenv.config();
+import twitterRoutes from './routes/twitterRoutes.js';
+import swellActionRoutes from './routes/swellRoutes.js';
 
 
 const app = express();

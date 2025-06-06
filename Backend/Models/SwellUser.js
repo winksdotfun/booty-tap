@@ -6,5 +6,5 @@ const userSchema = new mongoose.Schema({
   transactionHashes: { type: [String], default: [] }
 });
 
-const User = mongoose.model("User", userSchema);
+const User = mongoose.model("SwellUser", userSchema);
 export default User; 
